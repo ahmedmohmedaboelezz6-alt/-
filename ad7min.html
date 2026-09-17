@@ -43,7 +43,7 @@
             width: 90%;
             outline: none;
         }
-        input[type="text"] { background: #334155; color: #fff; text-align: center; border: 1px solid #475569; }
+        input[type="text"], input[type="datetime-local"] { background: #334155; color: #fff; text-align: center; border: 1px solid #475569; }
         input[type="file"] { background: #1e293b; color: #94a3b8; border: 1px dashed #38bdf8; cursor: pointer; padding: 10px; }
         
         button {
@@ -139,6 +139,13 @@
 <div class="container">
     <div class="store-badge">⚙️ لوحة تحكم وسحب متجر النور ⚙️</div>
     <h2>إدارة عجلة الحظ السحابية</h2>
+
+    <!-- قسم تحديد موعد السحب -->
+    <div class="gift-control-box">
+        <label>⏰ تحديد موعد السحب (يظهر للزوار):</label>
+        <input type="datetime-local" id="schedule-time-input">
+        <button class="btn-primary" style="margin-top: 8px;" onclick="saveScheduleTime()">حفظ وتحديث موعد السحب للزوار</button>
+    </div>
 
     <!-- قسم إدخال اسم الهدية وصورتها كملف محلي -->
     <div class="gift-control-box">
@@ -266,6 +273,29 @@
         }
     });
 
+    db.ref('scheduleTime').on('value', (snapshot) => {
+        let timeVal = snapshot.val();
+        if(timeVal) {
+            document.getElementById('schedule-time-input').value = timeVal;
+        }
+    });
+
+    // دالة حفظ موعد السحب
+    function saveScheduleTime() {
+        let timeVal = document.getElementById('schedule-time-input').value;
+        if(!timeVal) {
+            alert("يرجى اختيار الموعد أولاً!");
+            return;
+        }
+        db.ref('scheduleTime').set(timeVal, (error) => {
+            if(!error) {
+                alert("✅ تم حفظ وتحديث موعد السحب للزوار بنجاح!");
+            } else {
+                alert("حدث خطأ أثناء حفظ الموعد.");
+            }
+        });
+    }
+
     // دالة لحفظ اسم وصورة الهدية المرفوعة كملف محلي إلى قاعدة البيانات
     function saveGiftInfo() {
         let nameInput = document.getElementById('gift-name-input').value.trim();
@@ -293,7 +323,6 @@
             };
             reader.readAsDataURL(fileInput);
         } else {
-            // حفظ الاسم فقط إذا لم يتم اختيار صورة جديدة
             db.ref('giftInfo/name').set(nameInput, (error) => {
                 if(!error) alert("✅ تم حفظ اسم الهدية بنجاح!");
             });
@@ -339,10 +368,8 @@
                 isSpinning = false;
                 document.getElementById('winner-display').innerText = `🏆 الفائز هو: ${winnerObj.name} 🏆`;
                 
-                // 1. تحديث اسم الفائز بالسيرفر
                 db.ref('lastWinner').set(winnerObj.name);
 
-                // 2. إرسال واتساب تلقائي للفائز
                 let cleanPhone = winnerObj.phone.trim();
                 if (cleanPhone.startsWith('0')) {
                     cleanPhone = '2' + cleanPhone; 
@@ -351,10 +378,9 @@
                 let whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
                 window.open(whatsappUrl, '_blank');
 
-                // 3. مسح المشاركين، اسم الهدية، وصورة الهدية تلقائياً بعد السحب
                 setTimeout(() => {
                     db.ref('participants').remove();
-                    db.ref('giftInfo').remove(); // مسح الهدية بالكامل (الاسم والصورة)
+                    db.ref('giftInfo').remove();
                     db.ref('scheduleTime').set("اكتمل السحب وانتهت المسابقة");
                     alert(`🎉 تم إعلان الفائز (${winnerObj.name})، فتح الواتساب الخاص به، ومسح المشاركين وبيانات الهدية تلقائياً استعداداً لمسابقة جديدة!`);
                 }, 1000);
@@ -372,6 +398,7 @@
             db.ref('scheduleTime').set("");
             document.getElementById('winner-display').innerText = "";
             document.getElementById('gift-name-input').value = "";
+            document.getElementById('schedule-time-input').value = "";
             alert("تم مسح وإعادة تعيين بيانات المسابقة بنجاح.");
         }
     }
