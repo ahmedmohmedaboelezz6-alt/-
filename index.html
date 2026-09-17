@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سحب عجلة الحظ الكبرى - متجر النور</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h2 { margin-top: 0; color: #38bdf8; }
+        .store-badge {
+            background: #38bdf8;
+            color: #0f172a;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 13px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 12px 15px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: none;
+            font-size: 15px;
+            width: 90%;
+            outline: none;
+        }
+        input { background: #334155; color: #fff; text-align: center; border: 1px solid #475569; }
+        input::placeholder { color: #94a3b8; }
+        button {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        button:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); transform: translateY(-1px); }
+        button:disabled, input:disabled {
+            background-color: #334155 !important;
+            color: #64748b !important;
+            cursor: not-allowed;
+            border-color: #1e293b !important;
+        }
+        #status-message {
+            margin-top: 15px;
+            color: #fde047;
+            font-size: 14px;
+            font-weight: bold;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        #success-alert {
+            color: #4ade80;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        
+        /* قسم الهدية وصورتها */
+        #gift-container {
+            background: rgba(56, 189, 248, 0.08);
+            padding: 15px;
+            border-radius: 14px;
+            margin: 15px 0;
+            border: 1px dashed #38bdf8;
+            display: none;
+        }
+        #gift-title {
+            margin: 0 0 10px 0;
+            color: #fde047;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #gift-img {
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #38bdf8;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+            display: none;
+            margin: 0 auto;
+        }
+
+        /* عجلة الحظ */
+        #wheel-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            margin: 20px auto;
+        }
+        canvas {
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.3);
+            border: 4px solid #38bdf8;
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-top: 22px solid #ef4444;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+        #winner-display {
+            font-size: 22px;
+            color: #34d399;
+            margin-top: 15px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+        }
+
+        /* تنسيق ميزات متجر النور (10 ميزات) */
+        .features-section {
+            margin-top: 30px;
+            text-align: right;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid #334155;
+        }
+        .features-section h3 {
+            color: #38bdf8;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        .feature-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            border-right: 3px solid #38bdf8;
+            color: #e2e8f0;
+        }
+    </style>
+
+    <!-- مكتبة فايربيس السحابية -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <div class="store-badge">✨ حصرياً من متجر النور ✨</div>
+    <h2>🎉 عجلة الحظ الكبرى 🎉</h2>
+    <p id="instruction-text">سجل بياناتك لتدخل معنا في السحب:</p>
+    
+    <!-- قسم عرض الهدية وصورتها القادمة من لوحة التحكم -->
+    <div id="gift-container">
+        <div id="gift-title"></div>
+        <img id="gift-img" src="" alt="صورة الهدية">
+    </div>
+
+    <input type="text" id="username" placeholder="اكتب اسمك الثلاثي...">
+    <br>
+    <input type="tel" id="userphone" placeholder="اكتب رقم التليفون (مثال: 010xxxxxxxx)...">
+    <br>
+    <button id="submit-btn" onclick="registerUser()">تسجيل المشاركة</button>
+
+    <div id="success-alert"></div>
+    
+    <div id="wheel-container">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheel" width="280" height="280"></canvas>
+    </div>
+    
+    <div id="winner-display"></div>
+    <div id="status-message">📅 موعد السحب: جاري الاتصال بالسرڤر...</div>
+
+    <!-- قسم 10 ميزات لمتجر النور -->
+    <div class="features-section">
+        <h3>🌟 لماذا تشارك معنا في مسابقات متجر النور؟</h3>
+        <div class="feature-grid">
+            <div class="feature-item">1. مصداقية تامة وشفافة بنسبة 100% في اختيار الفائزين عشوائياً عبر العجلة.</div>
+            <div class="feature-item">2. هدايا أصلية وقيمة مقدمة مباشرة من أقوى البراندات عبر متجر النور.</div>
+            <div class="feature-item">3. سحب سريع ومباشر بمجرد اكتمال الحد الأقصى للمشاركين (30 مشتركاً).</div>
+            <div class="feature-item">4. سهولة تامة في التسجيل بالاسم ورقم الهاتف فقط بدون تعقيد.</div>
+            <div class="feature-item">5. نظام حماية ذكي يمنع تكرار الأسماء وأرقام الهواتف لضمان تكافؤ الفرص.</div>
+            <div class="feature-item">6. تحديثات فورية ومباشرة لحالة العجلة وقائمة المسجلين عبر السيرفر.</div>
+            <div class="feature-item">7. خدمة عملاء متاحة دائماً لمساعدة الفائزين في استلام جوائزهم بكل سهولة.</div>
+            <div class="feature-item">8. مفاجآت وعروض حصرية دورية لجميع عملاء ومتابعي متجر النور الأوفياء.</div>
+            <div class="feature-item">9. توصيل سريع ومجاني للجوائز الفائزة حتى باب البيت لجميع المحافظات.</div>
+            <div class="feature-item">10. بيئة تفاعلية آمنة ومصممة بأحدث تقنيات الويب السحابية لراحتكم.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDfEFZMasZU-lPBveTL36rEPIyCBH1jMvw",
+        authDomain: "alnoor-store-5555.firebaseapp.com",
+        databaseURL: "https://alnoor-store-5555-default-rtdb.firebaseio.com",
+        projectId: "alnoor-store-5555",
+        storageBucket: "alnoor-store-5555.firebasestorage.app",
+        messagingSenderId: "951084767888",
+        appId: "1:951084767888:web:1ff4029e912885d7d95615",
+        measurementId: "G-MQH03HZERC"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let participants = [];
+    const canvas = document.getElementById('wheel');
+    const ctx = canvas.getContext('2d');
+
+    function drawWheel() {
+        let numOptions = participants.length;
+        ctx.clearRect(0, 0, 280, 280);
+        
+        if(numOptions === 0) {
+            ctx.fillStyle = "#334155";
+            ctx.beginPath();
+            ctx.arc(140, 140, 132, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "14px Tahoma";
+            ctx.fillText("في انتظار تسجيل المشاركين...", 60, 145);
+            return;
+        }
+
+        let arcSize = (2 * Math.PI) / numOptions;
+        let colors = ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1'];
+
+        for(let i = 0; i < numOptions; i++) {
+            let angle = i * arcSize;
+            ctx.beginPath();
+            ctx.fillStyle = colors[i % colors.length];
+            ctx.moveTo(140, 140);
+            ctx.arc(140, 140, 132, angle, angle + arcSize);
+            ctx.lineTo(140, 140);
+            ctx.fill();
+
+            ctx.strokeStyle = "#1e293b";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.save();
+            ctx.translate(140, 140);
+            ctx.rotate(angle + arcSize / 2);
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 12px Tahoma";
+            ctx.fillText(participants[i].name, 45, 5);
+            ctx.restore();
+        }
+
+        ctx.beginPath();
+        ctx.fillStyle = "#0f172a";
+        ctx.arc(140, 140, 20, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+    }
+
+    db.ref('participants').on('value', (snapshot) => {
+        let data = snapshot.val();
+        participants = data ? Object.values(data) : [];
+        drawWheel();
+
+        if (participants.length >= 30) {
+            lockRegistration("⛔ اكتمل العدد الأقصى (30 مشتركاً). أغلق التسجيل تلقائياً بانتظار السحب!");
+        }
+    });
+
+    db.ref('giftInfo').on('value', (snapshot) => {
+        let gift = snapshot.val();
+        let giftBox = document.getElementById('gift-container');
+        if(gift && gift.name) {
+            document.getElementById('gift-title').innerText = `🎁 الهدية المطروحة بالسحب: ${gift.name}`;
+            let imgTag = document.getElementById('gift-img');
+            if(gift.image) {
+                imgTag.src = gift.image;
+                imgTag.style.display = "block";
+            } else {
+                imgTag.style.display = "none";
+            }
+            giftBox.style.display = "block";
+        } else {
+            giftBox.style.display = "none";
+        }
+    });
+
+    db.ref('scheduleTime').on('value', (snapshot) => {
+        let scheduleTime = snapshot.val() || "";
+        let statusBox = document.getElementById('status-message');
+
+        if (scheduleTime.includes("انتهى") || scheduleTime.includes("مغلق") || scheduleTime.includes("اكتمل العدد")) {
+            lockRegistration("🔒 حالة السحب: " + scheduleTime);
+        } else if (scheduleTime.trim() === "") {
+            statusBox.innerText = "📅 موعد السحب القادم: قريباً من متجر النور";
+        } else {
+            statusBox.innerText = "📅 موعد السحب القادم: " + scheduleTime;
+        }
+    });
+
+    function lockRegistration(msg) {
+        let nameInput = document.getElementById('username');
+        let phoneInput = document.getElementById('userphone');
+        let submitBtn = document.getElementById('submit-btn');
+        let instructionText = document.getElementById('instruction-text');
+        let statusBox = document.getElementById('status-message');
+
+        nameInput.disabled = true;
+        phoneInput.disabled = true;
+        submitBtn.disabled = true;
+        nameInput.placeholder = "التسجيل مغلق";
+        phoneInput.placeholder = "التسجيل مغلق";
+        instructionText.innerText = "⛔ تم إغلاق باب التسجيل في مسابقة متجر النور، تابع العجلة لمعرفة الفائز!";
+        statusBox.style.color = "#f87171";
+        statusBox.innerText = msg;
+    }
+
+    // عرض اسم الفائز فقط عند اختياره من لوحة التحكم
+    db.ref('lastWinner').on('value', (snapshot) => {
+        let winnerName = snapshot.val();
+        if(winnerName) {
+            document.getElementById('winner-display').innerText = `🏆 الفائز بالهدية من متجر النور هو: ${winnerName} 🏆`;
+        }
+    });
+
+    function registerUser() {
+        if (participants.length >= 30) {
+            alert("عذراً، اكتمل العدد الأقصى للمشاركين (30 مشتركاً) وتم إغلاق التسجيل!");
+            return;
+        }
+
+        let nameInput = document.getElementById('username');
+        let phoneInput = document.getElementById('userphone');
+        let name = nameInput.value.trim();
+        let phone = phoneInput.value.trim();
+        let successDiv = document.getElementById('success-alert');
+        
+        successDiv.innerText = "";
+
+        if(name === "" || phone === "") {
+            alert("يرجى إدخال الاسم ورقم التليفون بشكل صحيح!");
+            return;
+        }
+
+        let nameExists = participants.some(p => p.name === name);
+        let phoneExists = participants.some(p => p.phone === phone);
+
+        if(nameExists) {
+            alert("هذا الاسم مسجل مسبقاً، حاول باسم آخر!");
+            return;
+        }
+
+        if(phoneExists) {
+            alert("رقم التليفون هذا مسجل مسبقاً، لا يمكن التسجيل به مرتين!");
+            return;
+        }
+
+        db.ref('participants').push({ name: name, phone: phone }, (error) => {
+            if (error) {
+                alert("حدث خطأ أثناء التسجيل، حاول مرة أخرى.");
+            } else {
+                successDiv.innerText = "✅ تم تسجيل بياناتك بنجاح في متجر النور! تابع العجلة.";
+                nameInput.value = "";
+                phoneInput.value = "";
+            }
+        });
+    }
+</script>
+
+</body>
+</html>
